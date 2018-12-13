@@ -1,15 +1,52 @@
 path='/Users/ozintel/Downloads/self.embedding_size'
 import numpy as np
+import pandas as pd
+from sklearn.externals import joblib
 with open(path) as file_emebed:
+    word2vec_dic={}
     # print('file_emebed.shape',)
     for index,each in enumerate(file_emebed):
+
         line_list=each.strip().split()
-        print('line',np.array(line_list[1:]).shape)
-        # print('line',[np.float32(each) for each in line_list[1:]])
-        print('line {}'.format(index),np.float32(line_list[1:]))
-        if index>10:
-            break
+        vec=line_list[1:]
+        if len(vec)!=300:
+            print('line_list 0',line_list)
+            continue
+        else:
+            vec=np.float32(vec)
+            word2vec_dic[line_list[0]]=vec
+            # print('line',np.array(vec).shape)
+            # print('line',[np.float32(each) for each in line_list[1:]])
+            # print('line {}'.format(index),vec)
+            if index<10:
+                print('line_list 1',line_list)
+
 print([1,2,3,4])
+
+
+
+path='word2id.pkl'
+word2id_dic=joblib.load(path)
+word2vec_list=np.random.uniform(-1,1,size=(len(word2id_dic),300))
+print('word2vec_list',word2vec_list)
+#值为0的放在第0行，值为1的放在第1行
+count=0
+for word,id in word2id_dic.items():
+    if word not in word2vec_dic:
+        count=count+1
+print('count',count)
+    # word2vec_list[id,:]=word2vec_dic.get(word,word2vec_list[id,:])
+# joblib.dump(word2vec_list,'pretrained_word2vec_list.pkl')
+
+
+
+
+# print(len(word2id_dic),word2id_dic)
+
+
+
+pretrained_word2vec_list=joblib.load('pretrained_word2vec_list.pkl')
+print('pretrained_word2vec_list',len(pretrained_word2vec_list))
 
 '''
 line (1,)

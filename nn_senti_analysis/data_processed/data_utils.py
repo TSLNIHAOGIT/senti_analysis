@@ -151,6 +151,8 @@ def id2word_func():
     word2id_dic=joblib.load( 'word2id.pkl')
     print('word2id_dic',word2id_dic)
     #id=3对应的都是unk
+    # id2word = {v: k  for k, v in word2id_dic.items()}
+
     id2word={v:  k if v!=3 else _UNK for k, v in word2id_dic.items()  }
 
     # # #只需要对不是新词进行id2word转换，因为新词对id应的都是unk,与3对应的是一样的;然后把3对应的unk添上
@@ -201,25 +203,28 @@ if __name__=='__main__':
     #                 tokenizer=None, normalize_digits=False)
     # print('go word2id')
     # word2id_func(data_path)
-    # print('go id2word')
-    # id2word_func()
+    print('go id2word')
+    id2word_func()#{0: '<pad>', 1: '<go>', 2: '<eos>', 3: '<unknown>', 7629: '专程', 941: '成都', 4394: '绵阳
     # print('go rainingSamples')
     # trainingSamples_func(data_path)
     # print('go final')
     # final_data()
 
-
-    p1='../../data/data_cleaned/hotel-vocabSize50000.pkl'
-    p2='all_vocabs_id_dict.pkl'
-    all_vocabs_id_dict=joblib.load(p1)
-    print(all_vocabs_id_dict['word2id'])
-    print(all_vocabs_id_dict['id2word'])
-    sample_length3=np.array(all_vocabs_id_dict['trainingSamples'][0:3])
-    for each in sample_length3:
-        print(each[1])
-
-
-    print('all_vocabs_id_dict',len(all_vocabs_id_dict),all_vocabs_id_dict)
+    #
+    # p1='../../data/data_cleaned/hotel-vocabSize50000.pkl'
+    # p2='all_vocabs_id_dict.pkl'
+    # all_vocabs_id_dict=joblib.load(p1)
+    # print(len(all_vocabs_id_dict['word2id']),all_vocabs_id_dict['word2id'])
+    '''
+    28694 {'<pad>': 0, '<go>': 1, '<eos>': 2, '<unknown>': 3, '专程': 7629, '成都': 941, '绵阳': 4394, 
+    '''
+    # print(all_vocabs_id_dict['id2word'])
+    # sample_length3=np.array(all_vocabs_id_dict['trainingSamples'][0:3])
+    # for each in sample_length3:
+    #     print(each[1])
+    #
+    #
+    # print('all_vocabs_id_dict',len(all_vocabs_id_dict),all_vocabs_id_dict)
 
     # p3='../../nn_senti_analysis/data_processed/all_vocabs_id_dict.pkl'
     # print(joblib.load(p3))

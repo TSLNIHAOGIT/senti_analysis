@@ -5,7 +5,7 @@ import ssl
 import numpy as np
 from nn_senti_analysis.data_helpers import loadDataset,getBatches, sentence2enco
 from tqdm import tqdm
-
+from sklearn.externals import  joblib
 '''
 （1）padding:dynamic处理变长序列时，取最大长度序列，不足的序列补0；
  (2) mask:设置sequence_length，这样输出时补零的time_step部分输出也为0
@@ -78,12 +78,12 @@ batch_size = 400
 # n_inputs = 3  # MNIST data input(img shape:28*28)
 # n_steps = 5  # time steps
 
-n_hidden_units = 500  # neurons in hidden layer
+n_hidden_units = 300  # neurons in hidden layer
 n_classes = 2  # MNIST classes(0-9 digits)
 keep_prob = tf.placeholder(tf.float32)
 # LSTM layer 的层数
 layer_num = 3
-embedding_size=500 #n_hidden_units与embedding_size的关系;两者大小相等。
+embedding_size=300 #n_hidden_units与embedding_size的关系;两者大小相等。
 
 # x y placeholder
 # x = tf.placeholder(tf.float32, [None, n_steps, n_inputs]) #(4,5,3)
@@ -92,9 +92,22 @@ embedding_size=500 #n_hidden_units与embedding_size的关系;两者大小相等�
 
 
 encoder_inputs = tf.placeholder(tf.int32, [None, None], name='encoder_inputs')
+
+pretrained_word2vec=np.float32(joblib.load('data_processed/pretrained_word2vec_list.pkl'))
+# pretrained_word2vec=tf.placeholder(tf.float32,[None, None], name='pretrained_word2vec')
 # encoder_inputs_length = tf.placeholder(tf.int32, [None], name='encoder_inputs_length')
 
-embedding = tf.get_variable('embedding', [len(word2id), embedding_size])
+#embedding 被不断的训练，开始时是随机初始化，然后不断的调用之前训练好的
+#词表总共有50000个词汇，编号从0-50000（0，1，2，3分别为padToken, goToken, eosToken, unknownToken）
+#因此embedding0-50000的词向量要一一对应
+#初始化embedding为常量时不需要指定大小
+embedding = tf.get_variable('embedding',initializer=pretrained_word2vec)
+
+#不初始化的embedding
+# embedding = tf.get_variable('embedding', [len(word2id), embedding_size])
+
+
+
 encoder_inputs_embedded = tf.nn.embedding_lookup(embedding, encoder_inputs)
 
 # batch_size = tf.placeholder(tf.int32, [], name='batch_size')
