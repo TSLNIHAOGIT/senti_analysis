@@ -311,6 +311,20 @@ Training:   8%|▊         | 2/25 [06:09<1:10:43, 184.50s/it]step2,Minibatch Los
 Training:  12%|█▏        | 3/25 [11:08<1:21:44, 222.92s/it]step3,Minibatch Loss=0.6304,Training Accuracy=0.642
 Training:  20%|██        | 5/25 [20:14<1:20:58, 242.93s/it]step4,Minibatch Loss=0.6500,Training Accuracy=0.572
 Training:  24%|██▍       | 6/25 [24:41<1:18:10, 246.89s/it]step5,Minibatch Loss=0.6285,Training Accuracy=0.645
-
+step6,Minibatch Loss=0.6129,Training Accuracy=0.710
+Training:  32%|███▏      | 8/25 [32:01<1:08:02, 240.17s/it]step7,Minibatch Loss=0.6168,Training Accuracy=0.663
+Training:  36%|███▌      | 9/25 [36:38<1:05:08, 244.31s/it]step8,Minibatch Loss=0.5830,Training Accuracy=0.715
+step9,Minibatch Loss=0.5372,Training Accuracy=0.780
+Training:  44%|████▍     | 11/25 [44:42<56:53, 243.83s/it]  step10,Minibatch Loss=0.5364,Training Accuracy=0.765
+step11,Minibatch Loss=0.5433,Training Accuracy=0.757
+Training:  52%|█████▏    | 13/25 [54:35<50:23, 251.97s/it]step12,Minibatch Loss=0.5877,Training Accuracy=0.710
+Training:  56%|█████▌    | 14/25 [58:13<45:45, 249.56s/it]step13,Minibatch Loss=0.5186,Training Accuracy=0.793
+Training:  60%|██████    | 15/25 [1:02:35<41:43, 250.35s/it]step14,Minibatch Loss=0.4939,Training Accuracy=0.817
+step15,Minibatch Loss=0.5040,Training Accuracy=0.800
+Training:  64%|██████▍   | 16/25 [1:05:50<37:02, 246.89s/it]step16,Minibatch Loss=0.5161,Training Accuracy=0.795
+Training:  72%|███████▏  | 18/25 [1:12:00<28:00, 240.04s/it]step17,Minibatch Loss=0.4871,Training Accuracy=0.817
+step18,Minibatch Loss=0.5488,Training Accuracy=0.755
+Training:  76%|███████▌  | 19/25 [1:18:49<24:53, 248.90s/it]step19,Minibatch Loss=0.5387,Training Accuracy=0.765
+Training:  80%|████████  | 20/25 [1:22:42<20:40, 248.12s/it]step20,Minibatch Loss=0.5344,Training Accuracy=0.755
 
 '''
