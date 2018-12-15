@@ -1,0 +1,1 @@
+每一次退出时event_out都会保存不同step的summary信息，因此要将所有的都保留tensorboard显示才是完整的，否则只是某个阶段的step的summary
