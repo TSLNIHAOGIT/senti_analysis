@@ -22,55 +22,7 @@ data_path='../data/data_cleaned/hotel-vocabSize50000.pkl'
 
 word2id, id2word, trainingSamples = loadDataset(data_path)
 
-# 导入数据
-# mnist = input_data.read_data_sets("../MNIST_data", one_hot=True)
 
-
-#
-# data_x_batch=[
-#      [
-#         [1,1,3],
-#         [3,2,0],
-#         [5,2,0],
-#         [5,2,0],
-#         [0,7,0],
-#
-#      ],
-#     [
-#         [3,1,6],
-#         [8,0,0],
-#         [6,2,0],
-#         [0,0,0],
-#         [0,0,0],
-#      ],
-#    [
-#         [1,8,3],
-#         [9,2,0],
-#        [1, 9, 3],
-#         [5,2,0],
-#         [0,0,0],
-#
-#      ],
-#     [
-#         [3,7,6],
-#         [9,0,0],
-#         [0,0,0],
-#         [0,0,0],
-#         [0,0,0],
-#      ],
-#
-#     ]
-#
-# data_y_batch=[
-#     [0,1],
-#     [1,0],
-#     [0,1],
-#     [0,1],
-# ]
-
-# (batchsize,time_step,vec_size)=(4,5,3)
-
-# hyperparameters
 lr = 0.001  # learning rate
 
 training_iters = 100000  # train step 上限
@@ -249,8 +201,8 @@ cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, label
 # Training summary for the current batch_loss
 tf.summary.scalar('loss', cost)
 summary_op = tf.summary.merge_all()
-step = tf.Variable(0, trainable=False)
-train_op = tf.train.AdamOptimizer(lr).minimize(cost,global_step=step)
+global_step = tf.Variable(0, trainable=False)
+train_op = tf.train.AdamOptimizer(lr).minimize(cost,global_step=global_step)
 
 # Evaluate mode
 correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(label_one_hot, 1))
@@ -283,7 +235,7 @@ with tf.Session() as sess:
     # for each in tf.all_variables():
     #     print('each var', each)
     # print('encoder_inputs_embedded',sess.run(encoder_inputs_embedded))
-    # step = 0
+    step = 0
 
 
     summary_writer = tf.summary.FileWriter(model_path, graph=sess.graph)
@@ -312,18 +264,19 @@ with tf.Session() as sess:
             # batch_xs, batch_ys
             # shape(4, 5, 3)(4, 2)
 
-            _,current_step=sess.run([train_op,step], feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys,keep_prob:0.9})
-            if current_step % 1 == 0:
+
+            sess.run([train_op], feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys,keep_prob:0.9})
+            if step % 1 == 0:
                 loss, acc,summary = sess.run([cost, accuracy,summary_op], feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys,keep_prob:0.9})
                 # print("step" + str(step) + ",Minibatch Loss=" + "{:.4f}".format(loss)
                 #       + ",Training Accuracy=" + "{:.3f}".format(acc))
 
-                summary_writer.add_summary(summary, current_step)
-                tqdm.write("----- Step %d -- Loss %.5f -- acc %.5f" % (current_step, loss, acc))
+                tqdm.write("----- Step %d -- Loss %.5f -- acc %.5f" % (step, loss, acc))
+                summary_writer.add_summary(summary, step)
                 checkpoint_path = os.path.join(model_path, 'senti_analysis.ckpt')
-                saver.save(sess, checkpoint_path, global_step=current_step)
+                saver.save(sess, checkpoint_path, global_step=step)
 
-            # step += 1
+            step += 1
 
 
 
