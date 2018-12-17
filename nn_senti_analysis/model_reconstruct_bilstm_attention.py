@@ -18,8 +18,8 @@ import os
 #
 # tf.set_random_seed(1)  # set random seed
 
-data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
-# data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
+# data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
+data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
 
 word2id, id2word, trainingSamples = loadDataset(data_path)
 
@@ -144,6 +144,50 @@ def cost_self_define(target, prediction):
     return tf.reduce_mean(cross_entropy)
 
 
+def attention_self_define(inputs, attention_size, time_major=False, return_alphas=False):
+    if isinstance(inputs, tuple):
+        # In case of Bi-RNN, concatenate the forward and the backward RNN outputs.
+        inputs = tf.concat(inputs, 2)
+
+    if time_major:
+        # (T,B,D) => (B,T,D)
+        inputs = tf.transpose(inputs, [1, 0, 2])
+
+    hidden_size = inputs.shape[2].value  # D value - hidden size of the RNN layer
+
+    # Trainable parameters
+    w_omega = tf.Variable(tf.random_normal([hidden_size, attention_size], stddev=0.1))
+    b_omega = tf.Variable(tf.random_normal([attention_size], stddev=0.1))
+    u_omega = tf.Variable(tf.random_normal([attention_size], stddev=0.1))
+
+    with tf.name_scope('v'):
+        # Applying fully connected layer with non-linear activation to each of the B*T timestamps;
+        #  the shape of `v` is (B,T,D)*(D,A)=(B,T,A), where A=attention_size
+        v = tf.tanh(tf.tensordot(inputs, w_omega, axes=1) + b_omega)
+
+    # For each of the timestamps its vector of size A from `v` is reduced with `u` vector
+    vu = tf.tensordot(v, u_omega, axes=1, name='vu')  # (B,T) shape
+    alphas = tf.nn.softmax(vu, name='alphas')  # (B,T) shape
+
+    # Output of (Bi-)RNN is reduced with attention vector; the result has (B,D) shape
+    output = tf.reduce_sum(inputs * tf.expand_dims(alphas, -1), 1)
+
+    if not return_alphas:
+        return output
+    else:
+        return output, alphas
+    
+def bi_single_rnn_cell(rnn_size,keep_prob):
+        # 创建单个cell，这里需要注意的是一定要使用一个single_rnn_cell的函数，不然直接把cell放在MultiRNNCell
+        # 的列表中最终模型会发生错误
+        single_cell_fw = tf.contrib.rnn.LSTMCell(rnn_size)
+        single_cell_bw = tf.contrib.rnn.LSTMCell(rnn_size)
+        #添加dropout
+        cell_drop_fw = tf.contrib.rnn.DropoutWrapper(single_cell_fw, output_keep_prob=keep_prob)
+        cell_drop_bw = tf.contrib.rnn.DropoutWrapper(single_cell_bw, output_keep_prob=keep_prob)
+        return cell_drop_fw,cell_drop_bw
+
+
 def RNN(X):
     # 计算序列padd过后的序列有效长度
     X_length = length(X)
@@ -171,10 +215,21 @@ def RNN(X):
     outputs, final_state_ = tf.nn.dynamic_rnn(mlstm_cell, inputs=X, sequence_length=X_length, initial_state=init_state,
                                               time_major=False)
     # final_state估计是（layer_num,(cell_state,hidden_state)）
-    print('outputs', outputs)
+    print('outputs', outputs)#outputs Tensor("rnn/transpose_1:0", shape=(400, ?, 300), dtype=float32),batch_size*step*dim
     # 针对有padding时的state
-    last_relevant_state = last_relevant(outputs, X_length)
-    print('last_relevant_state ', last_relevant_state)
+
+
+    seq_len_num=X_length.get_shape()
+    print('seq_len_num',seq_len_num)
+
+    # last_relevant_state = last_relevant(outputs, X_length)
+
+
+    #inputs=outputs没有对outputs进行掩膜，即取前t个不是0的step,若是双向lstm,则attention_size=n_hidden_units*2
+    attention_cls=attention_self_define(inputs=outputs, attention_size=n_hidden_units, time_major=False, return_alphas=False)
+    last_relevant_state=attention_cls
+
+    print('last_relevant_state ', last_relevant_state)#Tensor("GatherV2:0", shape=(?, 300), dtype=float32)batch_size*dim
     # with tf.variable_scope("logis",reuse=None):
 
     logits=tf.layers.dense(inputs=last_relevant_state, units=n_classes, activation=None,
@@ -218,7 +273,7 @@ with tf.Session() as sess:
     transfer_learning = False
     # 如果存在已经保存的模型的话，就继续训练，否则，就重新开始
     ckpt = tf.train.get_checkpoint_state(model_hotel_path)
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path): #and False:
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path) and False:
         print('Reloading model parameters..')
         if transfer_learning:
             restore_vaiables=[each for each in tf.global_variables() if 'dense' not in each.name]

@@ -1,3 +1,3 @@
-model_checkpoint_path: "senti_analysis.ckpt-210"
-all_model_checkpoint_paths: "senti_analysis.ckpt-209"
-all_model_checkpoint_paths: "senti_analysis.ckpt-210"
+model_checkpoint_path: "senti_analysis.ckpt-221"
+all_model_checkpoint_paths: "senti_analysis.ckpt-220"
+all_model_checkpoint_paths: "senti_analysis.ckpt-221"
