@@ -186,58 +186,183 @@ def bi_single_rnn_cell(rnn_size,keep_prob):
         cell_drop_fw = tf.contrib.rnn.DropoutWrapper(single_cell_fw, output_keep_prob=keep_prob)
         cell_drop_bw = tf.contrib.rnn.DropoutWrapper(single_cell_bw, output_keep_prob=keep_prob)
         return cell_drop_fw,cell_drop_bw
-
-
 def RNN(X):
-    # 计算序列padd过后的序列有效长度
+    _inputs = X
     X_length = length(X)
-    # MultiRNNCel
-    ####################################################################################
-    # **步骤2：定义一层 LSTM_cell，只需要说明 hidden_size, 它会自动匹配输入的 X 的维度
-    # lstm_cell = tf.nn.rnn_cell.GRUCell(num_units=n_hidden_units)  #cell可以选择lstm也可以用gru
-    lstm_cell = tf.contrib.rnn.BasicLSTMCell(num_units=n_hidden_units, forget_bias=1.0, state_is_tuple=True)
-
-    # **步骤3：添加 dropout layer, 一般只设置 output_keep_prob
-    lstm_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_cell, input_keep_prob=1.0, output_keep_prob=keep_prob)
-
-    # **步骤4：调用 MultiRNNCell 来实现多层 LSTM
-    mlstm_cell = tf.contrib.rnn.MultiRNNCell([lstm_cell] * layer_num, state_is_tuple=True)
-
-    # **步骤5：用全零来初始化state
-    init_state = mlstm_cell.zero_state(batch_size, dtype=tf.float32)
-
-    # **步骤6：方法一，调用 dynamic_rnn() 来让我们构建好的网络运行起来
-    # ** 当 time_major==False 时， outputs.shape = [batch_size, timestep_size, hidden_size]
-    # ** 所以，可以取 h_state = outputs[:, -1, :] 作为最后输出
-    # ** state.shape = [layer_num, 2, batch_size, hidden_size],
-    # ** 或者，可以取 h_state = state[-1][1] 作为最后输出
-    # ** 最后输出维度是 [batch_size, hidden_size]
-    outputs, final_state_ = tf.nn.dynamic_rnn(mlstm_cell, inputs=X, sequence_length=X_length, initial_state=init_state,
-                                              time_major=False)
-    # final_state估计是（layer_num,(cell_state,hidden_state)）
-    print('outputs', outputs)#outputs Tensor("rnn/transpose_1:0", shape=(400, ?, 300), dtype=float32),batch_size*step*dim
-    # 针对有padding时的state
+    print('_inputs', _inputs)  # Tensor("encoder/embedding_lookup/Identity:0", shape=(?, ?, 1024), dtype=float32)
+    ###
+    # 5-50／10000 L2；
 
 
-    seq_len_num=X_length.get_shape()
-    print('seq_len_num',seq_len_num)
+    if len(_inputs.get_shape().as_list()) != 3:
+        raise ValueError("the inputs must be 3-dimentional Tensor")
+    all_layer_final_state = []
+    for index, _ in enumerate(range(layer_num)):
+        # 为什么在这加个variable_scope,被逼的,tf在rnn_cell的__call__中非要搞一个命名空间检查
+        # 恶心的很.如果不在这加的话,会报错的.
+        with tf.variable_scope(None, default_name="bidirectional-rnn"):
+            print(index, '_inputs o', _inputs)
+            '''
+            0 _inputs o Tensor("encoder/embedding_lookup/Identity:0", shape=(?, ?, 1024), dtype=float32)
+            1 _inputs o Tensor("encoder/concat:0", shape=(?, ?, 2048), dtype=float32)
+            2 _inputs o Tensor("encoder/bidirectional-rnn_1/concat:0", shape=(?, ?, 2048), dtype=float32)
+            '''
 
-    # last_relevant_state = last_relevant(outputs, X_length)
+            # 这个结构每次要重新加载，否则会把之前的参数也保留从而出错
+            rnn_cell_fw, rnn_cell_bw = bi_single_rnn_cell(n_hidden_units,0.5)
+
+            initial_state_fw = rnn_cell_fw.zero_state(batch_size, dtype=tf.float32)
+            initial_state_bw = rnn_cell_bw.zero_state(batch_size, dtype=tf.float32)
+            (output, state) = tf.nn.bidirectional_dynamic_rnn(rnn_cell_fw, rnn_cell_bw, _inputs,
+                                                              sequence_length=X_length,
+                                                              initial_state_fw=initial_state_fw,
+                                                              initial_state_bw=initial_state_bw,
+                                                              dtype=tf.float32)
+
+            print('index,output', index, output)
+            '''
+            output输出每次都是1024，不管输入是多少维度的，相当与接了1024的全链接层
+            index,output 0 (<tf.Tensor 'encoder/bidirectional-rnn/bidirectional_rnn/fw/fw/transpose_1:0' shape=(?, ?, 1024) dtype=float32>, <tf.Tensor 'encoder/bidirectional-rnn/ReverseSequence:0' shape=(?, ?, 1024) dtype=float32>)
+            index,output 1 (<tf.Tensor 'encoder/bidirectional-rnn_1/bidirectional_rnn/fw/fw/transpose_1:0' shape=(?, ?, 1024) dtype=float32>, <tf.Tensor 'encoder/bidirectional-rnn_1/ReverseSequence:0' shape=(?, ?, 1024) dtype=float32>)
+            index,output 2 (<tf.Tensor 'encoder/bidirectional-rnn_2/bidirectional_rnn/fw/fw/transpose_1:0' shape=(?, ?, 1024) dtype=float32>, <tf.Tensor 'encoder/bidirectional-rnn_2/ReverseSequence:0' shape=(?, ?, 1024) dtype=float32>)
+
+            '''
+            print('''type state[0].c''', type(state[0].c))
+            # type state[0].c <class 'tensorflow.python.framework.ops.Tensor'>
+
+            _inputs = tf.concat(output, 2)
+            #分类时没有使用state,只使用了outputs
+            # encoder_final_state_c = tf.concat(
+            #     (state[0].c, state[1].c), 1)
+            #
+            # encoder_final_state_h = tf.concat(
+            #     (state[0].h, state[1].h), 1)
+            #
+            # encoder_final_state = tf.nn.rnn_cell.LSTMStateTuple(
+            #     c=encoder_final_state_c,
+            #     h=encoder_final_state_h
+            # )
+            # all_layer_final_state.append(encoder_final_state)
+
+            # print('index:{},state:{}'.format(index, state))
+            '''
+            num_layers=3时
+            index:0,state:(
+            LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn/bidirectional_rnn/fw/fw/while/Exit_3:0' shape=(?, 1024) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn/bidirectional_rnn/fw/fw/while/Exit_4:0' shape=(?, 1024) dtype=float32>), 
+            LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn/bidirectional_rnn/bw/bw/while/Exit_3:0' shape=(?, 1024) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn/bidirectional_rnn/bw/bw/while/Exit_4:0' shape=(?, 1024) dtype=float32>))
+
+            index:1,state:(
+            LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_1/bidirectional_rnn/fw/fw/while/Exit_3:0' shape=(?, 1024) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_1/bidirectional_rnn/fw/fw/while/Exit_4:0' shape=(?, 1024) dtype=float32>), 
+            LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_1/bidirectional_rnn/bw/bw/while/Exit_3:0' shape=(?, 1024) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_1/bidirectional_rnn/bw/bw/while/Exit_4:0' shape=(?, 1024) dtype=float32>))
+
+            index:2,state:(
+            LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_2/bidirectional_rnn/fw/fw/while/Exit_3:0' shape=(?, 1024) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_2/bidirectional_rnn/fw/fw/while/Exit_4:0' shape=(?, 1024) dtype=float32>), 
+            LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_2/bidirectional_rnn/bw/bw/while/Exit_3:0' shape=(?, 1024) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_2/bidirectional_rnn/bw/bw/while/Exit_4:0' shape=(?, 1024) dtype=float32>))
 
 
-    #inputs=outputs没有对outputs进行掩膜，即取前t个不是0的step,若是双向lstm,则attention_size=n_hidden_units*2
-    attention_cls=attention_self_define(inputs=outputs, attention_size=n_hidden_units, time_major=False, return_alphas=False)
-    last_relevant_state=attention_cls
+            '''
 
-    print('last_relevant_state ', last_relevant_state)#Tensor("GatherV2:0", shape=(?, 300), dtype=float32)batch_size*dim
+    encoder_outputs = _inputs
+    # encoder_state = tuple(all_layer_final_state)  # state#
+    # print('encoder_state', encoder_state)
+
+    attention_cls = attention_self_define(inputs=encoder_outputs, attention_size=n_hidden_units, time_major=False,
+                                          return_alphas=False)
+    last_relevant_state = attention_cls
+
+    print('last_relevant_state ',
+          last_relevant_state)  # Tensor("GatherV2:0", shape=(?, 300), dtype=float32)batch_size*dim
     # with tf.variable_scope("logis",reuse=None):
 
-    logits=tf.layers.dense(inputs=last_relevant_state, units=n_classes, activation=None,
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                           bias_initializer = tf.zeros_initializer(),
+    logits = tf.layers.dense(inputs=last_relevant_state, units=n_classes, activation=None,
+                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                             bias_initializer=tf.zeros_initializer(),
 
-                           )
+                             )
     return logits
+    '''
+    encoder_state (
+    LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn/concat_1:0' shape=(?, 2048) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn/concat_2:0' shape=(?, 2048) dtype=float32>), 
+    LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_1/concat_1:0' shape=(?, 2048) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_1/concat_2:0' shape=(?, 2048) dtype=float32>), 
+    LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_2/concat_1:0' shape=(?, 2048) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_2/concat_2:0' shape=(?, 2048) dtype=float32>),
+    LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_3/concat_1:0' shape=(?, 2048) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_3/concat_2:0' shape=(?, 2048) dtype=float32>))
+
+    '''
+
+    # print('encoder_outputs', encoder_outputs)
+    '''
+    encoder_outputs Tensor("encoder/bidirectional-rnn_1/concat:0", shape=(?, ?, 2048), dtype=float32)
+
+    '''
+
+    # print('state', state)  #
+    '''
+    state (
+     LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_1/bidirectional_rnn/fw/fw/while/Exit_3:0' shape=(?, 1024) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_1/bidirectional_rnn/fw/fw/while/Exit_4:0' shape=(?, 1024) dtype=float32>),
+     LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_1/bidirectional_rnn/bw/bw/while/Exit_3:0' shape=(?, 1024) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_1/bidirectional_rnn/bw/bw/while/Exit_4:0' shape=(?, 1024) dtype=float32>))
+
+    '''
+
+    # encoder_state，应该为每一层最后时刻的lstmtuple()组成的tuple
+    # print('encoder_state', encoder_state)
+    '''
+    (
+    LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn/concat_1:0' shape=(?, 2048) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn/concat_2:0' shape=(?, 2048) dtype=float32>), 
+    LSTMStateTuple(c=<tf.Tensor 'encoder/bidirectional-rnn_1/concat_1:0' shape=(?, 2048) dtype=float32>, h=<tf.Tensor 'encoder/bidirectional-rnn_1/concat_2:0' shape=(?, 2048) dtype=float32>))
+
+    '''
+    pass
+
+# def RNN(X):
+#     # 计算序列padd过后的序列有效长度
+#     X_length = length(X)
+#     # MultiRNNCel
+#     ####################################################################################
+#     # **步骤2：定义一层 LSTM_cell，只需要说明 hidden_size, 它会自动匹配输入的 X 的维度
+#     # lstm_cell = tf.nn.rnn_cell.GRUCell(num_units=n_hidden_units)  #cell可以选择lstm也可以用gru
+#     lstm_cell = tf.contrib.rnn.BasicLSTMCell(num_units=n_hidden_units, forget_bias=1.0, state_is_tuple=True)
+#
+#     # **步骤3：添加 dropout layer, 一般只设置 output_keep_prob
+#     lstm_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_cell, input_keep_prob=1.0, output_keep_prob=keep_prob)
+#
+#     # **步骤4：调用 MultiRNNCell 来实现多层 LSTM
+#     mlstm_cell = tf.contrib.rnn.MultiRNNCell([lstm_cell] * layer_num, state_is_tuple=True)
+#
+#     # **步骤5：用全零来初始化state
+#     init_state = mlstm_cell.zero_state(batch_size, dtype=tf.float32)
+#
+#     # **步骤6：方法一，调用 dynamic_rnn() 来让我们构建好的网络运行起来
+#     # ** 当 time_major==False 时， outputs.shape = [batch_size, timestep_size, hidden_size]
+#     # ** 所以，可以取 h_state = outputs[:, -1, :] 作为最后输出
+#     # ** state.shape = [layer_num, 2, batch_size, hidden_size],
+#     # ** 或者，可以取 h_state = state[-1][1] 作为最后输出
+#     # ** 最后输出维度是 [batch_size, hidden_size]
+#     outputs, final_state_ = tf.nn.dynamic_rnn(mlstm_cell, inputs=X, sequence_length=X_length, initial_state=init_state,
+#                                               time_major=False)
+#     # final_state估计是（layer_num,(cell_state,hidden_state)）
+#     print('outputs', outputs)#outputs Tensor("rnn/transpose_1:0", shape=(400, ?, 300), dtype=float32),batch_size*step*dim
+#     # 针对有padding时的state
+#
+#
+#     seq_len_num=X_length.get_shape()
+#     print('seq_len_num',seq_len_num)
+#
+#     # last_relevant_state = last_relevant(outputs, X_length)
+#
+#
+#     #inputs=outputs没有对outputs进行掩膜，即取前t个不是0的step,attention_size可简单的设为n_hidden_units
+#     attention_cls=attention_self_define(inputs=outputs, attention_size=n_hidden_units, time_major=False, return_alphas=False)
+#     last_relevant_state=attention_cls
+#
+#     print('last_relevant_state ', last_relevant_state)#Tensor("GatherV2:0", shape=(?, 300), dtype=float32)batch_size*dim
+#     # with tf.variable_scope("logis",reuse=None):
+#
+#     logits=tf.layers.dense(inputs=last_relevant_state, units=n_classes, activation=None,
+#                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+#                            bias_initializer = tf.zeros_initializer(),
+#
+#                            )
+#     return logits
 
 
 print('encoder_inputs_embedded', encoder_inputs_embedded)
