@@ -55,14 +55,15 @@ def cut_process(input_str):
     return ' '.join(cleaned_str_split)
 
 
-def pre_sub_split_words(path):
+def pre_sub_split_words(path_read,path_save):
     all_data_list=[]
     '''先分词将一些实体替换掉，例如日期时间、人名、地名、机构名字,还是先用规则处理'''
     # 1.去除特殊字符，直接去处所有的标点符号
-    path1=os.path.join(path,'neg.txt')
-    path2=os.path.join(path,'pos.txt')
+    path1=os.path.join(path_read,'neg.txt')
+    path2=os.path.join(path_read,'pos.txt')
     with open(path1,encoding='gbk',errors='ignore') as neg_file:
         for each in neg_file:
+            each=each.strip()
             each_line_dict={}
             each_split=cut_process(each)
             each_line_dict['split_text']=each_split
@@ -70,6 +71,7 @@ def pre_sub_split_words(path):
             all_data_list.append(each_line_dict)
     with open(path2,encoding='gbk',errors='ignore') as neg_file:
         for each in neg_file:
+            each = each.strip()
             each_line_dict={}
             each_split=cut_process(each)
             each_line_dict['split_text']=each_split
@@ -83,21 +85,25 @@ def pre_sub_split_words(path):
     print('df.head',df.head())
     print('df.tail',df.tail())
     print('开始保存分好的词')
-    df[['split_text', 'label']].to_parquet('../../data/data_cleaned/hotel_split.parquet.gzip',compression='gzip')
+    df[['split_text', 'label']].to_parquet(path_save, compression = 'gzip')
 
 
 
 
 if __name__=='__main__':
     # path0='part1_split.parquet.gzip'
-    path = '../../data/中文情感分析语料库/hotel'
-    # pre_sub_split_words(path)
+    # path_read = '../../data/中文情感分析语料库/hotel'
+    path_read='../../data/中文情感分析语料库/fruit'
+    path_save = '../../data/data_cleaned/fruit_split.parquet.gzip'
+    pre_sub_split_words(path_read,path_save)
 
 
-    pp='../../data/data_cleaned/hotel_split.parquet.gzip'
-    df=pd.read_parquet(pp)
-    print('df.head', df.head())
-    print('df.tail', df.tail())
+
+
+    # pp='../../data/data_cleaned/hotel_split.parquet.gzip'
+    # df=pd.read_parquet(pp)
+    # print('df.head', df.head())
+    # print('df.tail', df.tail())
 
     '''
       content_split                                      title_split
