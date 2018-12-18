@@ -9,6 +9,9 @@ import pickle
 import random
 import re
 import jieba
+import datetime;
+import random;
+
 #自定义词典要放在并行化程序之前，否则不起作用
 jieba.load_userdict('../data/self_define_dict.txt')
 
@@ -76,6 +79,9 @@ def getBatches(data, batch_size):
     :return: 列表，每个元素都是一个batch的样本数据，可直接传入feed_dict进行训练
     '''
     #每个epoch之前都要进行样本的shuffle
+    nowTime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")  # 生成当前时间
+    #设置当前时间为随机数种子，确保每一次shuffle都是不同的
+    random.seed(nowTime)
     random.shuffle(data)
     # 先不shauffle看结果
 
@@ -141,3 +147,62 @@ def sentence2enco(sentence, word2id):
     #调用createBatch构造batch
     batch = createBatch([[wordIds, []]])
     return batch
+
+if __name__=='__main__':
+    data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
+    # data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
+    batch_size=300
+    word2id, id2word, trainingSamples = loadDataset(data_path)
+    batches = getBatches(trainingSamples, batch_size)
+    for index,each in enumerate(batches):
+        print('index each.encoder_inputs_length',index,np.array(each.encoder_inputs).shape,len(each.encoder_inputs_length),each)
+'''
+index each.encoder_inputs_length 0 300
+index each.encoder_inputs_length 1 300
+***
+index each.encoder_inputs_length 32 300
+index each.encoder_inputs_length 33 100
+'''
+'''
+data_x_batchs=[
+#      [
+#         [1,1,3],
+#         [3,2,0],
+#         [5,2,0],
+#         [5,2,0],
+#         [0,7,0],
+#
+#      ],
+#     [
+#         [3,1,6],
+#         [8,0,0],
+#         [6,2,0],
+#         [0,0,0],
+#         [0,0,0],
+#      ],
+#    [
+#         [1,8,3],
+#         [9,2,0],
+#        [1, 9, 3],
+#         [5,2,0],
+#         [0,0,0],
+#
+#      ],
+#     [
+#         [3,7,6],
+#         [9,0,0],
+#         [0,0,0],
+#         [0,0,0],
+#         [0,0,0],
+#      ],
+#
+#     ]
+#
+# data_y_batch=[
+#     [0,1],
+#     [1,0],
+#     [0,1],
+#     [0,1],
+# ]
+
+'''

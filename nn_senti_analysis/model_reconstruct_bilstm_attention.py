@@ -18,8 +18,8 @@ import os
 #
 # tf.set_random_seed(1)  # set random seed
 
-# data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
-data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
+data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
+# data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
 
 word2id, id2word, trainingSamples = loadDataset(data_path)
 
@@ -75,21 +75,20 @@ word2id, id2word, trainingSamples = loadDataset(data_path)
 lr = 0.0001  # learning rate
 
 training_iters = 100000  # train step 上限
-batch_size = 400
+
 
 # n_inputs = 3  # MNIST data input(img shape:28*28)
 # n_steps = 5  # time steps
 
 n_hidden_units = 300  # neurons in hidden layer
 n_classes = 2  # MNIST classes(0-9 digits)
-keep_prob = tf.placeholder(tf.float32)
 # LSTM layer 的层数
-layer_num = 3
+layer_num = 2
 embedding_size = 300  # n_hidden_units与embedding_size的关系;两者大小相等。
 numEpochs = 10
 model_fruit_path = 'model_fruit'
 model_fruit_transform_path='model_fruit_transform'
-model_hotel_path='model_hotel_reconstruct'
+model_hotel_path='model_hotel_reconstruct_bi_attention'
 # x y placeholder
 # x = tf.placeholder(tf.float32, [None, n_steps, n_inputs]) #(4,5,3)
 # y = tf.placeholder(tf.float32, [None, n_classes])  #(4, 2)
@@ -101,6 +100,9 @@ encoder_inputs = tf.placeholder(tf.int32, [None, None], name='encoder_inputs')
 
 embedding = tf.get_variable('embedding', [28694, embedding_size])##len(word2id)
 encoder_inputs_embedded = tf.nn.embedding_lookup(embedding, encoder_inputs)
+keep_prob = tf.placeholder(tf.float32)
+batch_size=tf.placeholder(tf.int32, [], name='batch_sizee')#300
+batch_size_flag=300
 
 
 
@@ -186,9 +188,8 @@ def bi_single_rnn_cell(rnn_size,keep_prob):
         cell_drop_fw = tf.contrib.rnn.DropoutWrapper(single_cell_fw, output_keep_prob=keep_prob)
         cell_drop_bw = tf.contrib.rnn.DropoutWrapper(single_cell_bw, output_keep_prob=keep_prob)
         return cell_drop_fw,cell_drop_bw
-def RNN(X):
-    _inputs = X
-    X_length = length(X)
+def RNN(_inputs):
+    X_length = length(_inputs)
     print('_inputs', _inputs)  # Tensor("encoder/embedding_lookup/Identity:0", shape=(?, ?, 1024), dtype=float32)
     ###
     # 5-50／10000 L2；
@@ -209,7 +210,7 @@ def RNN(X):
             '''
 
             # 这个结构每次要重新加载，否则会把之前的参数也保留从而出错
-            rnn_cell_fw, rnn_cell_bw = bi_single_rnn_cell(n_hidden_units,0.5)
+            rnn_cell_fw, rnn_cell_bw = bi_single_rnn_cell(n_hidden_units,keep_prob)
 
             initial_state_fw = rnn_cell_fw.zero_state(batch_size, dtype=tf.float32)
             initial_state_bw = rnn_cell_bw.zero_state(batch_size, dtype=tf.float32)
@@ -227,7 +228,7 @@ def RNN(X):
             index,output 2 (<tf.Tensor 'encoder/bidirectional-rnn_2/bidirectional_rnn/fw/fw/transpose_1:0' shape=(?, ?, 1024) dtype=float32>, <tf.Tensor 'encoder/bidirectional-rnn_2/ReverseSequence:0' shape=(?, ?, 1024) dtype=float32>)
 
             '''
-            print('''type state[0].c''', type(state[0].c))
+            # print('''type state[0].c''', type(state[0].c))
             # type state[0].c <class 'tensorflow.python.framework.ops.Tensor'>
 
             _inputs = tf.concat(output, 2)
@@ -398,7 +399,7 @@ with tf.Session() as sess:
     transfer_learning = False
     # 如果存在已经保存的模型的话，就继续训练，否则，就重新开始
     ckpt = tf.train.get_checkpoint_state(model_hotel_path)
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path) and False:
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path) :#and False:
         print('Reloading model parameters..')
         if transfer_learning:
             restore_vaiables=[each for each in tf.global_variables() if 'dense' not in each.name]
@@ -439,9 +440,13 @@ with tf.Session() as sess:
     # summary_writer = tf.summary.FileWriter(model_path, graph=sess.graph)
     for e in range(numEpochs):
         print("----- Epoch {}/{} -----".format(e + 1, numEpochs))
-        batches = getBatches(trainingSamples, batch_size)
+        batches = getBatches(trainingSamples, batch_size_flag)
         for nextBatch in tqdm(batches, desc="Training"):
+        # for i in range(1):
+        #     nextBatch=batches[-1]
+
             batch_xs, batch_ys = nextBatch.encoder_inputs, nextBatch.decoder_targets
+            #最后一个batch大小只有100，但是看到的是300所有有问题了；遇到最后一个batch时
 
             # print('batch_xs, batch_ys shape',np.array(batch_xs).shape, np.array(batch_ys).shape)
             # print('batch_xs, batch_ys\n',batch_xs,'\n',batch_ys)
@@ -458,13 +463,12 @@ with tf.Session() as sess:
             # shape(4, 5, 3)(4, 2)
 
             _, current_step = sess.run([train_op, step],
-                                       feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys, keep_prob: 0.9})
+                                       feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys, keep_prob: 0.5,batch_size:len(batch_xs)})#
             if current_step % 1 == 0:
                 loss, acc, summary = sess.run([cost, accuracy, summary_op],
                                               feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys,
-                                                         keep_prob: 0.9})
-                # print("step" + str(step) + ",Minibatch Loss=" + "{:.4f}".format(loss)
-                #       + ",Training Accuracy=" + "{:.3f}".format(acc))
+                                                         keep_prob: 0.5,batch_size:len(batch_xs)})#len(batch_xs)
+
 
                 summary_writer.add_summary(summary, current_step)
                 tqdm.write("----- Step %d -- Loss %.5f -- acc %.5f" % (current_step, loss, acc))
@@ -542,6 +546,64 @@ Training:  40%|████      | 10/25 [02:47<04:11, 16.78s/it]----- Step 11 -
 Training:  44%|████▍     | 11/25 [04:13<05:23, 23.08s/it]----- Step 12 -- Loss 0.64497 -- acc 0.61500
 Training:  48%|████▊     | 12/25 [04:27<04:49, 22.29s/it]----- Step 13 -- Loss 0.70930 -- acc 0.50500
 Training:  52%|█████▏    | 13/25 [04:27<04:07, 20.61s/it]----- Step 14 -- Loss 0.61598 -- acc 0.75000
+
+
+'''
+'''
+维度不一致造成的，sequence_length=100,但是输入数据是任然是300；
+File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/client/session.py", line 1334, in _do_call
+    return fn(*args)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/client/session.py", line 1319, in _run_fn
+    options, feed_dict, fetch_list, target_list, run_metadata)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/client/session.py", line 1407, in _call_tf_sessionrun
+    run_metadata)
+tensorflow.python.framework.errors_impl.InvalidArgumentError: assertion failed: [Expected shape for Tensor bidirectional-rnn/bidirectional_rnn/fw/fw/sequence_length:0 is ] [100] [ but saw shape: ] [300]
+	 [[{{node bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert}} = Assert[T=[DT_STRING, DT_INT32, DT_STRING, DT_INT32], summarize=3, _device="/job:localhost/replica:0/task:0/device:CPU:0"](bidirectional-rnn/bidirectional_rnn/fw/fw/All, bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert/data_0, bidirectional-rnn/bidirectional_rnn/fw/fw/stack, bidirectional-rnn_1/bidirectional_rnn/fw/fw/Assert/Assert/data_2, bidirectional-rnn_1/bidirectional_rnn/fw/fw/Shape)]]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/ozintel/Downloads/Tsl_python_progect/local_ml/senti_analysis/nn_senti_analysis/model_reconstruct_bilstm_attention.py", line 462, in <module>
+    feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys, keep_prob: 0.5})
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/client/session.py", line 929, in run
+    run_metadata_ptr)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/client/session.py", line 1152, in _run
+    feed_dict_tensor, options, run_metadata)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/client/session.py", line 1328, in _do_run
+    run_metadata)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/client/session.py", line 1348, in _do_call
+    raise type(e)(node_def, op, message)
+tensorflow.python.framework.errors_impl.InvalidArgumentError: assertion failed: [Expected shape for Tensor bidirectional-rnn/bidirectional_rnn/fw/fw/sequence_length:0 is ] [100] [ but saw shape: ] [300]
+	 [[node bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert (defined at /Users/ozintel/Downloads/Tsl_python_progect/local_ml/senti_analysis/nn_senti_analysis/model_reconstruct_bilstm_attention.py:220)  = Assert[T=[DT_STRING, DT_INT32, DT_STRING, DT_INT32], summarize=3, _device="/job:localhost/replica:0/task:0/device:CPU:0"](bidirectional-rnn/bidirectional_rnn/fw/fw/All, bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert/data_0, bidirectional-rnn/bidirectional_rnn/fw/fw/stack, bidirectional-rnn_1/bidirectional_rnn/fw/fw/Assert/Assert/data_2, bidirectional-rnn_1/bidirectional_rnn/fw/fw/Shape)]]
+
+Caused by op 'bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert', defined at:
+  File "/Users/ozintel/Downloads/Tsl_python_progect/local_ml/senti_analysis/nn_senti_analysis/model_reconstruct_bilstm_attention.py", line 369, in <module>
+    logits = RNN(encoder_inputs_embedded)
+  File "/Users/ozintel/Downloads/Tsl_python_progect/local_ml/senti_analysis/nn_senti_analysis/model_reconstruct_bilstm_attention.py", line 220, in RNN
+    dtype=tf.float32)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/ops/rnn.py", line 439, in bidirectional_dynamic_rnn
+    time_major=time_major, scope=fw_scope)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/ops/rnn.py", line 651, in dynamic_rnn
+    [_assert_has_shape(sequence_length, [batch_size])]):
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/ops/rnn.py", line 646, in _assert_has_shape
+    packed_shape, " but saw shape: ", x_shape])
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/util/tf_should_use.py", line 189, in wrapped
+    return _add_should_use_warning(fn(*args, **kwargs))
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/ops/control_flow_ops.py", line 159, in Assert
+    return gen_logging_ops._assert(condition, data, summarize, name="Assert")
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/ops/gen_logging_ops.py", line 52, in _assert
+    name=name)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/framework/op_def_library.py", line 787, in _apply_op_helper
+    op_def=op_def)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/util/deprecation.py", line 488, in new_func
+    return func(*args, **kwargs)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/framework/ops.py", line 3274, in create_op
+    op_def=op_def)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tensorflow/python/framework/ops.py", line 1770, in __init__
+    self._traceback = tf_stack.extract_stack()
+
+InvalidArgumentError (see above for traceback): assertion failed: [Expected shape for Tensor bidirectional-rnn/bidirectional_rnn/fw/fw/sequence_length:0 is ] [100] [ but saw shape: ] [300]
+	 [[node bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert (defined at /Users/ozintel/Downloads/Tsl_python_progect/local_ml/senti_analysis/nn_senti_analysis/model_reconstruct_bilstm_attention.py:220)  = Assert[T=[DT_STRING, DT_INT32, DT_STRING, DT_INT32], summarize=3, _device="/job:localhost/replica:0/task:0/device:CPU:0"](bidirectional-rnn/bidirectional_rnn/fw/fw/All, bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert/data_0, bidirectional-rnn/bidirectional_rnn/fw/fw/stack, bidirectional-rnn_1/bidirectional_rnn/fw/fw/Assert/Assert/data_2, bidirectional-rnn_1/bidirectional_rnn/fw/fw/Shape)]]
 
 
 '''
