@@ -172,7 +172,10 @@ def trainingSamples_func(text_path,word2id_read_path,trainingSamples_save_path):
 
 
     for index, each_row in data_df.iterrows():
-        content_split = each_row['split_text']
+        content_split = each_row['split_text'].strip().split(' ')#字符串后面一定要split变成列表
+        # print('type(content_split)',type(content_split))
+        # for each in content_split:
+        #     print(each)
         label =each_row['label']
         #####unk
         content_split_id=[word2id_dic.get(word,UNK_ID) for word in content_split]
@@ -198,28 +201,35 @@ if __name__=='__main__':
     data_path='../../data/data_cleaned/fruit_split.parquet.gzip'
     save_path='chinese_fruit'
 
-    print('create_vocabulary')
-    create_vocabulary(vocabulary_path=os.path.join(save_path,'fruit_all_vocabs_id_dict.pkl'), data_path=data_path, max_vocabulary_size=50000,
-                    tokenizer=None, normalize_digits=False)
-    print('go word2id')
-    word2id_func(text_path=data_path,
-                 word2id_save_path=os.path.join(save_path,'fruit_word2id.pkl'),
-                 all_vocabs_id_dict_path=os.path.join(save_path,'fruit_all_vocabs_id_dict.pkl'))
-    print('go id2word')
-    id2word_func(word2id_read_path=os.path.join(save_path,'fruit_word2id.pkl'),
-                 id2word_save_path=os.path.join(save_path,'fruit_id2word.pkl'))#{0: '<pad>', 1: '<go>', 2: '<eos>', 3: '<unknown>', 7629: '专程', 941: '成都', 4394: '绵阳
-    print('go rainingSamples')
-    trainingSamples_func(text_path=data_path,word2id_read_path=os.path.join(save_path,'fruit_word2id.pkl')
-                         ,trainingSamples_save_path=os.path.join(save_path,'fruit_trainingSamples.pkl'))
+    # data_path = '../../data/data_cleaned/hotel_split.parquet.gzip'
+    # save_path = 'chinese_hotel'
+
+
+    # print('create_vocabulary')
+    # create_vocabulary(vocabulary_path=os.path.join(save_path,'fruit_all_vocabs_id_dict.pkl'), data_path=data_path, max_vocabulary_size=50000,
+    #                 tokenizer=None, normalize_digits=False)
+    # print('go word2id')
+    # word2id_func(text_path=data_path,
+    #              word2id_save_path=os.path.join(save_path,'fruit_word2id.pkl'),
+    #              all_vocabs_id_dict_path=os.path.join(save_path,'fruit_all_vocabs_id_dict.pkl'))
+    # print('go id2word')
+    # id2word_func(word2id_read_path=os.path.join(save_path,'fruit_word2id.pkl'),
+    #              id2word_save_path=os.path.join(save_path,'fruit_id2word.pkl'))#{0: '<pad>', 1: '<go>', 2: '<eos>', 3: '<unknown>', 7629: '专程', 941: '成都', 4394: '绵阳
+    print('go trainingSamples')
+    trainingSamples_func(text_path=data_path,word2id_read_path=os.path.join(save_path,'word2id.pkl')
+                         ,trainingSamples_save_path=os.path.join(save_path,'trainingSamples.pkl'))
     print('go final')
-    final_data(word2id_path=os.path.join(save_path,'fruit_word2id.pkl'),
-               id2word_path=os.path.join(save_path,'fruit_id2word.pkl'),
-               trainingSamples_path=os.path.join(save_path,'fruit_trainingSamples.pkl'),
-               all_data_save_path=os.path.join(save_path,'fruit-vocabSize50000.pkl'))
+    final_data(word2id_path=os.path.join(save_path,'word2id.pkl'),
+               id2word_path=os.path.join(save_path,'id2word.pkl'),
+               trainingSamples_path=os.path.join(save_path,'trainingSamples.pkl'),
+               all_data_save_path=os.path.join(save_path,'vocabSize50000.pkl'))
 
     #
     # p1='../../data/data_cleaned/hotel-vocabSize50000.pkl'
     # p2='all_vocabs_id_dict.pkl'
+    p3='chinese_hotel/trainingSamples.pkl'
+    trainingSamples=joblib.load(p3)
+    print('trainingSamples',np.array(trainingSamples).shape)
     # all_vocabs_id_dict=joblib.load(p1)
     # print(len(all_vocabs_id_dict['word2id']),all_vocabs_id_dict['word2id'])
     '''

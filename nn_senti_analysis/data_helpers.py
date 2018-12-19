@@ -147,13 +147,25 @@ def sentence2enco(sentence, word2id,label=0):#label默认为0，此处只是为�
     return batch
 
 if __name__=='__main__':
-    data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
-    # data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
+    # data_path = '../data/data_cleaned/fruit-vocabSize50000.pkl'
+    data_path='../data/data_cleaned/hotel-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
     batch_size=300
     word2id, id2word, trainingSamples = loadDataset(data_path)
-    batches = getBatches(trainingSamples, batch_size)
-    for index,each in enumerate(batches):
-        print('index each.encoder_inputs_length',index,np.array(each.encoder_inputs).shape,len(each.encoder_inputs_length),each)
+
+    # print('word2id',word2id)
+    # print('id2word',id2word)
+    # print('trainingSamples',trainingSamples[0][0])
+    print([id2word[each] for each in trainingSamples[0][0]])
+    # batches = getBatches(trainingSamples, batch_size)
+    # for index,each in enumerate(batches):
+    #     print('index each.encoder_inputs_length',index,np.array(each.encoder_inputs).shape,len(each.encoder_inputs_length),each)
+
+'''
+word2id {'<pad>': 0, '<go>': 1, '<eos>': 2, '<unknown>': 3, '专程': 7629, '成都': 941, '绵阳': 4394, '第四届': 13921, '科博会': 13922, '万达': 4395, '广场':
+id2word {0: '<pad>', 1: '<go>', 2: '<eos>', 3: '<unknown>', 7629: '专程', 941: '成都', 4394: '绵阳', 13921: '第四届', 13922: '科博会', 4395: '万达', 559: '广场', 48: '吃', 1333:
+'''
+
+
 '''
 index each.encoder_inputs_length 0 300
 index each.encoder_inputs_length 1 300

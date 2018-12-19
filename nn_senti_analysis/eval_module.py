@@ -34,7 +34,7 @@ print('df_label',df_label)
 
 
 #评估时使用当前的word2id，trainingSamples使用要评估的语料生成
-print('trainingSamples label',np.array(trainingSamples)[:,1])
+print('trainingSamples label;shape',np.array(trainingSamples)[:,1],np.array(trainingSamples).shape)
 '''
 df_label [1 1 1 ... 0 0 0]
 trainingSamples label [1 1 1 ... 0 0 0]
@@ -305,14 +305,20 @@ with tf.Session() as sess:
     for nextBatch in tqdm(batches, desc="Eval"):
         batch_xs, batch_ys = nextBatch.encoder_inputs, nextBatch.decoder_targets
         # 最后一个batch大小只有100，但是看到的是300所有有问题了；遇到最后一个batch时
+        # print('batch_xs',np.array(batch_xs).shape)
+        # print('batch_xs 0', batch_xs[0])
+        # print('batch_xs 1', batch_xs[1])
+        # print('go 0',[id2word[each] for each in batch_xs[0]])
+        # print('go 1',[id2word[each] for each in batch_xs[1]])
+
         if current_step % 1 == 0:
             loss, acc, prediction = sess.run([cost, accuracy,pred],
                                           feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys,
                                                      keep_prob: 1, batch_size: len(batch_xs)})  # len(batch_xs)  #预测时要关闭dropout
             tqdm.write("----- Step %d -- Loss %.5f -- acc %.5f" % (current_step, loss, acc))
-            # print('pred',prediction.shape,prediction)#pred (300, 2)
+            print('pred',prediction.shape,prediction)#pred (300, 2)
             batch_pred_label=np.argmax(prediction, 1)
-            # print('predict label',batch_pred_label)
+            print('predict label',batch_pred_label)
             all_pred_label.extend(batch_pred_label)
             sum_acc=sum_acc+len(batch_xs)*acc
 
@@ -320,7 +326,7 @@ with tf.Session() as sess:
         current_step =current_step+1
         # break
     # df_text=df_text[0:300]
-    print('avg acc',sum_acc/len(trainingSamples))
+    print('avg acc',sum_acc/len(trainingSamples))#avg acc 0.8385000026226044
 
     # df_text['pred_label']=all_pred_label
     # print('df_text',df_text.head(),'\n',df_text.tail())
@@ -344,5 +350,31 @@ Eval:  24%|██▎       | 8/34 [03:36<11:42, 27.02s/it]----- Step 7 -- Loss 0
 Eval:  26%|██▋       | 9/34 [04:09<11:32, 27.69s/it]----- Step 8 -- Loss 0.52017 -- acc 0.78333
 Eval:  29%|██▉       | 10/34 [04:33<10:56, 27.37s/it]----- Step 9 -- Loss 0.52069 -- acc 0.78000
 Eval:  32%|███▏      | 11/34 [04:53<10:14, 26.71s/it]----- Step 10 -- Loss 0.50816 -- acc 0.78667
+Eval:  35%|███▌      | 12/34 [05:31<10:06, 27.59s/it]----- Step 11 -- Loss 0.51251 -- acc 0.78667
+----- Step 12 -- Loss 0.52523 -- acc 0.78667
+Eval:  41%|████      | 14/34 [07:02<10:03, 30.18s/it]----- Step 13 -- Loss 0.53613 -- acc 0.78333
+Eval:  44%|████▍     | 15/34 [07:52<09:58, 31.52s/it]----- Step 14 -- Loss 0.52243 -- acc 0.77667
+----- Step 15 -- Loss 0.55253 -- acc 0.73333
+Eval:  50%|█████     | 17/34 [08:35<08:35, 30.32s/it]----- Step 16 -- Loss 0.49490 -- acc 0.81667
+Eval:  53%|█████▎    | 18/34 [09:10<08:08, 30.56s/it]----- Step 17 -- Loss 0.41798 -- acc 0.90333
+Eval:  56%|█████▌    | 19/34 [09:30<07:30, 30.01s/it]----- Step 18 -- Loss 0.45216 -- acc 0.86667
+Eval:  59%|█████▉    | 20/34 [10:05<07:03, 30.28s/it]----- Step 19 -- Loss 0.42413 -- acc 0.89667
+Eval:  62%|██████▏   | 21/34 [10:32<06:31, 30.10s/it]----- Step 20 -- Loss 0.40744 -- acc 0.92333
+----- Step 21 -- Loss 0.43490 -- acc 0.88333
+Eval:  68%|██████▊   | 23/34 [11:28<05:29, 29.92s/it]----- Step 22 -- Loss 0.40609 -- acc 0.91333
+Eval:  71%|███████   | 24/34 [11:45<04:54, 29.41s/it]----- Step 23 -- Loss 0.39829 -- acc 0.92667
+----- Step 24 -- Loss 0.42124 -- acc 0.90333
+Eval:  74%|███████▎  | 25/34 [12:24<04:27, 29.77s/it]----- Step 25 -- Loss 0.43479 -- acc 0.88333
+Eval:  79%|███████▉  | 27/34 [13:17<03:26, 29.55s/it]----- Step 26 -- Loss 0.41428 -- acc 0.91333
+Eval:  82%|████████▏ | 28/34 [13:40<02:55, 29.29s/it]----- Step 27 -- Loss 0.40758 -- acc 0.92000
+----- Step 28 -- Loss 0.41563 -- acc 0.91000
+Eval:  88%|████████▊ | 30/34 [14:41<01:57, 29.38s/it]----- Step 29 -- Loss 0.41844 -- acc 0.90000
+----- Step 30 -- Loss 0.41962 -- acc 0.90333
+Eval:  91%|█████████ | 31/34 [14:57<01:26, 28.95s/it]----- Step 31 -- Loss 0.41421 -- acc 0.90333
+Eval:  97%|█████████▋| 33/34 [15:54<00:28, 28.93s/it]----- Step 32 -- Loss 0.41996 -- acc 0.90667
+Eval: 100%|██████████| 34/34 [16:01<00:00, 28.27s/it]
+----- Step 33 -- Loss 0.43187 -- acc 0.90000
+avg acc 0.8385000026226044
+ Eval Finished!
 
 '''

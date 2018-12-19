@@ -375,15 +375,23 @@ pred = tf.nn.softmax(logits)
 # Define loss and optimizer
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=label_one_hot))
 
-# Training summary for the current batch_loss
-tf.summary.scalar('loss', cost)
-summary_op = tf.summary.merge_all()
+
 step = tf.Variable(0, trainable=False)
 train_op = tf.train.AdamOptimizer(lr).minimize(cost, global_step=step)
+
+
 
 # Evaluate mode
 correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(label_one_hot, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+
+# Training summary for the current batch_loss
+
+# log_var = tf.Variable(0.0)
+# tf.summary.scalar('loss', log_var)
+
+tf.summary.scalar('loss', cost)
+summary_op = tf.summary.merge_all()
 
 
 
@@ -417,6 +425,8 @@ with tf.Session() as sess:
             saver.restore(sess, ckpt.model_checkpoint_path)
             if 'hotel' in data_path:
                 summary_writer = tf.summary.FileWriter(model_hotel_path, graph=sess.graph)
+                # summary_writer = tf.summary.FileWriter(os.path.join(model_hotel_path,'plot_loss'), graph=sess.graph)
+                # summary_writer2 = tf.summary.FileWriter(os.path.join(model_hotel_path, 'plot_accuracy'), graph=sess.graph)
             else:
                 summary_writer = tf.summary.FileWriter(model_fruit_path, graph=sess.graph)
 
@@ -430,7 +440,12 @@ with tf.Session() as sess:
         # Initialize the variables
         sess.run(tf.global_variables_initializer())
         if 'hotel' in data_path:
+            # summary_writer = tf.summary.FileWriter(os.path.join(model_hotel_path, 'plot_loss'), graph=sess.graph)
+            # summary_writer2 = tf.summary.FileWriter(os.path.join(model_hotel_path, 'plot_accuracy'), graph=sess.graph)
             summary_writer = tf.summary.FileWriter(model_hotel_path, graph=sess.graph)
+
+
+
         else:
             summary_writer = tf.summary.FileWriter(model_fruit_path, graph=sess.graph)
     # for each in tf.all_variables():
@@ -441,6 +456,7 @@ with tf.Session() as sess:
     for e in range(numEpochs):
         print("----- Epoch {}/{} -----".format(e + 1, numEpochs))
         batches = getBatches(trainingSamples, batch_size_flag)
+
         for nextBatch in tqdm(batches, desc="Training"):
         # for i in range(1):
         #     nextBatch=batches[-1]
@@ -471,6 +487,13 @@ with tf.Session() as sess:
 
 
                 summary_writer.add_summary(summary, current_step)
+                # summary_writer.flush()
+                #
+                #
+                # summary2=
+
+
+
                 tqdm.write("----- Step %d -- Loss %.5f -- acc %.5f" % (current_step, loss, acc))
 
 
