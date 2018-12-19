@@ -123,7 +123,7 @@ def cut_process(input_str):
  #       print('input', input_str)
         print('cleaned_str_split',cleaned_str_split)
     return cleaned_str_split
-def sentence2enco(sentence, word2id):
+def sentence2enco(sentence, word2id,label=0):#label默认为0，此处只是为了程序不出错，预测时并没有用到label
     '''
     测试的时候将用户输入的句子转化为可以直接feed进模型的数据，现将句子转化成id，然后调用createBatch处理
     :param sentence: 用户输入的句子
@@ -136,16 +136,13 @@ def sentence2enco(sentence, word2id):
     #分词
     tokens =cut_process(sentence)
    # tokens = nltk.word_tokenize(sentence)
-    if len(tokens) > 20:
-       # return None
-       #print('词汇数量较多超过20'）
-        print('词汇数量超出20') 
+
    #将每个单词转化为id
     wordIds = []
     for token in tokens:
         wordIds.append(word2id.get(token, unknownToken))
     #调用createBatch构造batch
-    batch = createBatch([[wordIds, []]])
+    batch = createBatch([[wordIds, label]])
     return batch
 
 if __name__=='__main__':

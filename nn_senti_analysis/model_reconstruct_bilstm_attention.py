@@ -72,7 +72,7 @@ word2id, id2word, trainingSamples = loadDataset(data_path)
 # (batchsize,time_step,vec_size)=(4,5,3)
 
 # hyperparameters
-lr = 0.0001  # learning rate
+lr = 0.00005  # learning rate
 
 training_iters = 100000  # train step 上限
 
@@ -399,7 +399,7 @@ with tf.Session() as sess:
     transfer_learning = False
     # 如果存在已经保存的模型的话，就继续训练，否则，就重新开始
     ckpt = tf.train.get_checkpoint_state(model_hotel_path)
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path) :#and False:
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):# and False:
         print('Reloading model parameters..')
         if transfer_learning:
             restore_vaiables=[each for each in tf.global_variables() if 'dense' not in each.name]
@@ -605,5 +605,26 @@ Caused by op 'bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert', defined 
 InvalidArgumentError (see above for traceback): assertion failed: [Expected shape for Tensor bidirectional-rnn/bidirectional_rnn/fw/fw/sequence_length:0 is ] [100] [ but saw shape: ] [300]
 	 [[node bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert (defined at /Users/ozintel/Downloads/Tsl_python_progect/local_ml/senti_analysis/nn_senti_analysis/model_reconstruct_bilstm_attention.py:220)  = Assert[T=[DT_STRING, DT_INT32, DT_STRING, DT_INT32], summarize=3, _device="/job:localhost/replica:0/task:0/device:CPU:0"](bidirectional-rnn/bidirectional_rnn/fw/fw/All, bidirectional-rnn/bidirectional_rnn/fw/fw/Assert/Assert/data_0, bidirectional-rnn/bidirectional_rnn/fw/fw/stack, bidirectional-rnn_1/bidirectional_rnn/fw/fw/Assert/Assert/data_2, bidirectional-rnn_1/bidirectional_rnn/fw/fw/Shape)]]
 
+
+'''
+'''
+fruit transformer 
+Step 251 -- Loss 0.55867 -- acc 0.77333
+Training:   3%|▎         | 1/34 [00:37<20:51, 37.92s/it]----- Step 252 -- Loss 0.55550 -- acc 0.76000
+Training:   6%|▌         | 2/34 [00:38<10:16, 19.27s/it]----- Step 253 -- Loss 0.53983 -- acc 0.78333
+Training:   9%|▉         | 3/34 [00:58<10:03, 19.47s/it]----- Step 254 -- Loss 0.55578 -- acc 0.75667
+Training:  12%|█▏        | 4/34 [02:20<17:32, 35.10s/it]----- Step 255 -- Loss 0.54403 -- acc 0.78000
+Training:  15%|█▍        | 5/34 [02:21<13:37, 28.20s/it]----- Step 256 -- Loss 0.54008 -- acc 0.78000
+Training:  18%|█▊        | 6/34 [02:58<13:54, 29.82s/it]----- Step 257 -- Loss 0.52635 -- acc 0.79667
+Training:  21%|██        | 7/34 [03:21<12:58, 28.82s/it]----- Step 258 -- Loss 0.52734 -- acc 0.79333
+Training:  24%|██▎       | 8/34 [03:22<10:57, 25.29s/it]----- Step 259 -- Loss 0.52809 -- acc 0.80000
+Training:  26%|██▋       | 9/34 [03:56<10:57, 26.29s/it]----- Step 260 -- Loss 0.54001 -- acc 0.78333
+Training:  29%|██▉       | 10/34 [04:32<10:53, 27.22s/it]----- Step 261 -- Loss 0.54727 -- acc 0.76667
+Training:  32%|███▏      | 11/34 [04:32<09:30, 24.81s/it]----- Step 262 -- Loss 0.51715 -- acc 0.80667
+Training:  35%|███▌      | 12/34 [05:32<10:10, 27.75s/it]----- Step 263 -- Loss 0.52697 -- acc 0.79667
+Training:  38%|███▊      | 13/34 [05:33<08:58, 25.66s/it]----- Step 264 -- Loss 0.53390 -- acc 0.77667
+Training:  41%|████      | 14/34 [07:36<10:52, 32.62s/it]----- Step 265 -- Loss 0.52557 -- acc 0.79667
+Training:  44%|████▍     | 15/34 [08:01<10:09, 32.10s/it]----- Step 266 -- Loss 0.51895 -- acc 0.81667
+Training:  47%|████▋     | 16/34 [08:37<09:42, 32.37s/it]----- Step 267 -- Loss 0.48486 -- acc 0.84333
 
 '''

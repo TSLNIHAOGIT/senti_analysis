@@ -59,8 +59,8 @@ def pre_sub_split_words(path_read,path_save):
     all_data_list=[]
     '''先分词将一些实体替换掉，例如日期时间、人名、地名、机构名字,还是先用规则处理'''
     # 1.去除特殊字符，直接去处所有的标点符号
-    path1=os.path.join(path_read,'neg.txt')
-    path2=os.path.join(path_read,'pos.txt')
+    path1=os.path.join(path_read,'neg.txt')#负向label==1
+    path2=os.path.join(path_read,'pos.txt')#正向label==0
     with open(path1,encoding='gbk',errors='ignore') as neg_file:
         for each in neg_file:
             each=each.strip()
