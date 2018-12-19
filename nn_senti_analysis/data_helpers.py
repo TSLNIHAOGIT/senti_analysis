@@ -70,7 +70,7 @@ def createBatch(samples):
 
     return batch
 
-def getBatches(data, batch_size):
+def getBatches(data, batch_size,training_flag=True):
     '''
     根据读取出来的所有数据和batch_size将原始数据分成不同的小batch。对每个batch索引的样本调用createBatch函数进行处理
     :param data: loadDataset函数读取之后的trainingSamples，就是QA对的列表
@@ -78,12 +78,13 @@ def getBatches(data, batch_size):
     :param en_de_seq_len: 列表，第一个元素表示source端序列的最大长度，第二个元素表示target端序列的最大长度
     :return: 列表，每个元素都是一个batch的样本数据，可直接传入feed_dict进行训练
     '''
-    #每个epoch之前都要进行样本的shuffle
-    nowTime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")  # 生成当前时间
-    #设置当前时间为随机数种子，确保每一次shuffle都是不同的
-    random.seed(nowTime)
-    random.shuffle(data)
-    # 先不shauffle看结果
+    #训练之前，每个epoch之前都要进行样本的shuffle
+    if training_flag:
+        nowTime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")  # 生成当前时间
+        #设置当前时间为随机数种子，确保每一次shuffle都是不同的
+        random.seed(nowTime)
+        random.shuffle(data)
+        # 先不shauffle看结果
 
     #
     batches = []

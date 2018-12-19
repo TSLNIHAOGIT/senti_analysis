@@ -303,19 +303,5 @@ with tf.Session() as sess:
 
 
 
-    # batches = getBatches(trainingSamples, batch_size_flag)
-    # current_step=0
-    # for nextBatch in tqdm(batches, desc="Eval"):
-    #     batch_xs, batch_ys = nextBatch.encoder_inputs, nextBatch.decoder_targets
-    #     # 最后一个batch大小只有100，但是看到的是300所有有问题了；遇到最后一个batch时
-    #     if current_step % 1 == 0:
-    #         loss, acc, prediction = sess.run([cost, accuracy,pred],
-    #                                       feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys,
-    #                                                  keep_prob: 1, batch_size: len(batch_xs)})  # len(batch_xs)  #预测时要关闭dropout
-    #         tqdm.write("----- Step %d -- Loss %.5f -- acc %.5f" % (current_step, loss, acc))
-    #         # print('pred',prediction)
-    #
-    #     current_step =current_step+1
 
-    print(" this sentence predict Finished!")
 

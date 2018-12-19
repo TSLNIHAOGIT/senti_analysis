@@ -6,6 +6,7 @@ import numpy as np
 from nn_senti_analysis.data_helpers import loadDataset, getBatches, sentence2enco
 from tqdm import tqdm
 import os
+import pandas as pd
 
 '''
 （1）padding:dynamic处理变长序列时，取最大长度序列，不足的序列补0；
@@ -21,8 +22,32 @@ import os
 data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
 # data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
 
+
+
+text_split_path='../data/data_cleaned/hotel_split.parquet.gzip'
+df_text=pd.read_parquet(text_split_path)
+
 word2id, id2word, trainingSamples = loadDataset(data_path)
-print('trainingSamples',trainingSamples)
+
+df_label=df_text['label'].values
+print('df_label',df_label)
+
+
+#评估时使用当前的word2id，trainingSamples使用要评估的语料生成
+print('trainingSamples label',np.array(trainingSamples)[:,1])
+'''
+df_label [1 1 1 ... 0 0 0]
+trainingSamples label [1 1 1 ... 0 0 0]
+'''
+
+#检验两者label是否一致
+C=np.array(df_label)==np.array(trainingSamples)[:,1]
+if False in C:
+    print('存在False')
+else:
+    print('两者一样')
+
+
 
 # 导入数据
 # mnist = input_data.read_data_sets("../MNIST_data", one_hot=True)
@@ -273,8 +298,10 @@ with tf.Session() as sess:
 
 
 
-    batches = getBatches(trainingSamples, batch_size_flag)
+    batches = getBatches(trainingSamples, batch_size_flag,training_flag=False)
     current_step=0
+    all_pred_label=[]
+    sum_acc=0.0
     for nextBatch in tqdm(batches, desc="Eval"):
         batch_xs, batch_ys = nextBatch.encoder_inputs, nextBatch.decoder_targets
         # 最后一个batch大小只有100，但是看到的是300所有有问题了；遇到最后一个batch时
@@ -283,9 +310,39 @@ with tf.Session() as sess:
                                           feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys,
                                                      keep_prob: 1, batch_size: len(batch_xs)})  # len(batch_xs)  #预测时要关闭dropout
             tqdm.write("----- Step %d -- Loss %.5f -- acc %.5f" % (current_step, loss, acc))
-            # print('pred',prediction)
+            # print('pred',prediction.shape,prediction)#pred (300, 2)
+            batch_pred_label=np.argmax(prediction, 1)
+            # print('predict label',batch_pred_label)
+            all_pred_label.extend(batch_pred_label)
+            sum_acc=sum_acc+len(batch_xs)*acc
+
 
         current_step =current_step+1
+        # break
+    # df_text=df_text[0:300]
+    print('avg acc',sum_acc/len(trainingSamples))
+
+    # df_text['pred_label']=all_pred_label
+    # print('df_text',df_text.head(),'\n',df_text.tail())
+    # df_text=df_text[df_text['label'] != df_text['pred_label']]
+    # df_text.to_csv('chinese_hotel_eval.csv', index=False)
 
     print(" Eval Finished!")
 
+'''
+数据原来顺序预测
+Eval:   0%|          | 0/34 [00:00<?, ?it/s]/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/tqdm/_monitor.py:89: TqdmSynchronisationWarning: Set changed size during iteration (see https://github.com/tqdm/tqdm/issues/481)
+  TqdmSynchronisationWarning)
+Eval:   3%|▎         | 1/34 [00:31<17:09, 31.19s/it]----- Step 0 -- Loss 0.50324 -- acc 0.80667
+Eval:   6%|▌         | 2/34 [01:04<17:07, 32.12s/it]----- Step 1 -- Loss 0.53603 -- acc 0.76000
+----- Step 2 -- Loss 0.52437 -- acc 0.78000
+Eval:  12%|█▏        | 4/34 [01:56<14:36, 29.21s/it]----- Step 3 -- Loss 0.57079 -- acc 0.72333
+----- Step 4 -- Loss 0.50944 -- acc 0.79667
+Eval:  15%|█▍        | 5/34 [02:15<13:03, 27.02s/it]----- Step 5 -- Loss 0.50712 -- acc 0.79000
+Eval:  21%|██        | 7/34 [03:17<12:43, 28.26s/it]----- Step 6 -- Loss 0.53870 -- acc 0.77000
+Eval:  24%|██▎       | 8/34 [03:36<11:42, 27.02s/it]----- Step 7 -- Loss 0.55630 -- acc 0.73333
+Eval:  26%|██▋       | 9/34 [04:09<11:32, 27.69s/it]----- Step 8 -- Loss 0.52017 -- acc 0.78333
+Eval:  29%|██▉       | 10/34 [04:33<10:56, 27.37s/it]----- Step 9 -- Loss 0.52069 -- acc 0.78000
+Eval:  32%|███▏      | 11/34 [04:53<10:14, 26.71s/it]----- Step 10 -- Loss 0.50816 -- acc 0.78667
+
+'''
