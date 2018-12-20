@@ -289,7 +289,7 @@ with tf.Session() as sess:
 
     # 如果存在已经保存的模型的话，就继续训练，否则，就重新开始
     ckpt = tf.train.get_checkpoint_state(model_hotel_path)
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):  # and False:
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path) :#and False:
         print('Reloading model parameters..')
         saver = tf.train.Saver()
         saver.restore(sess, ckpt.model_checkpoint_path)
@@ -308,17 +308,17 @@ with tf.Session() as sess:
         # print('batch_xs',np.array(batch_xs).shape)
         # print('batch_xs 0', batch_xs[0])
         # print('batch_xs 1', batch_xs[1])
-        # print('go 0',[id2word[each] for each in batch_xs[0]])
-        # print('go 1',[id2word[each] for each in batch_xs[1]])
+        print('go 0',[id2word[each] for each in batch_xs[0]])
+        print('go 1',[id2word[each] for each in batch_xs[1]])
 
         if current_step % 1 == 0:
             loss, acc, prediction = sess.run([cost, accuracy,pred],
                                           feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys,
                                                      keep_prob: 1, batch_size: len(batch_xs)})  # len(batch_xs)  #预测时要关闭dropout
             tqdm.write("----- Step %d -- Loss %.5f -- acc %.5f" % (current_step, loss, acc))
-            print('pred',prediction.shape,prediction)#pred (300, 2)
+            # print('pred',prediction.shape,prediction)#pred (300, 2)
             batch_pred_label=np.argmax(prediction, 1)
-            print('predict label',batch_pred_label)
+            # print('predict label',batch_pred_label)
             all_pred_label.extend(batch_pred_label)
             sum_acc=sum_acc+len(batch_xs)*acc
 
@@ -326,12 +326,12 @@ with tf.Session() as sess:
         current_step =current_step+1
         # break
     # df_text=df_text[0:300]
-    print('avg acc',sum_acc/len(trainingSamples))#avg acc 0.8385000026226044
+    print('avg acc',sum_acc/len(trainingSamples))#avg acc 0.9145000022649765
 
-    # df_text['pred_label']=all_pred_label
-    # print('df_text',df_text.head(),'\n',df_text.tail())
-    # df_text=df_text[df_text['label'] != df_text['pred_label']]
-    # df_text.to_csv('chinese_hotel_eval.csv', index=False)
+    df_text['pred_label']=all_pred_label
+    print('df_text',df_text.head(),'\n',df_text.tail())
+    df_text=df_text[df_text['label'] != df_text['pred_label']]
+    df_text.to_csv('chinese_hotel_eval.csv', index=False)
 
     print(" Eval Finished!")
 

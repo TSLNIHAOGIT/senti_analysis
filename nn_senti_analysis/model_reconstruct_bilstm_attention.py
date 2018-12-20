@@ -18,8 +18,8 @@ import os
 #
 # tf.set_random_seed(1)  # set random seed
 
-data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
-# data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
+# data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
+data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
 
 word2id, id2word, trainingSamples = loadDataset(data_path)
 
@@ -404,7 +404,7 @@ with tf.Session() as sess:
     #     print('node.name', n.name)
     # Run the initializer
 
-    transfer_learning = False
+    transfer_learning = True
     # 如果存在已经保存的模型的话，就继续训练，否则，就重新开始
     ckpt = tf.train.get_checkpoint_state(model_hotel_path)
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):# and False:
