@@ -98,7 +98,7 @@ model_hotel_path='model_hotel_reconstruct_bi_attention'
 encoder_inputs = tf.placeholder(tf.int32, [None, None], name='encoder_inputs')
 # encoder_inputs_length = tf.placeholder(tf.int32, [None], name='encoder_inputs_length')
 
-embedding = tf.get_variable('embedding', [28694, embedding_size])##len(word2id)
+embedding = tf.get_variable('embedding', [len(word2id), embedding_size])##len(word2id)
 encoder_inputs_embedded = tf.nn.embedding_lookup(embedding, encoder_inputs)
 keep_prob = tf.placeholder(tf.float32)
 batch_size=tf.placeholder(tf.int32, [], name='batch_sizee')#300
@@ -314,56 +314,7 @@ def RNN(_inputs):
     '''
     pass
 
-# def RNN(X):
-#     # 计算序列padd过后的序列有效长度
-#     X_length = length(X)
-#     # MultiRNNCel
-#     ####################################################################################
-#     # **步骤2：定义一层 LSTM_cell，只需要说明 hidden_size, 它会自动匹配输入的 X 的维度
-#     # lstm_cell = tf.nn.rnn_cell.GRUCell(num_units=n_hidden_units)  #cell可以选择lstm也可以用gru
-#     lstm_cell = tf.contrib.rnn.BasicLSTMCell(num_units=n_hidden_units, forget_bias=1.0, state_is_tuple=True)
-#
-#     # **步骤3：添加 dropout layer, 一般只设置 output_keep_prob
-#     lstm_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_cell, input_keep_prob=1.0, output_keep_prob=keep_prob)
-#
-#     # **步骤4：调用 MultiRNNCell 来实现多层 LSTM
-#     mlstm_cell = tf.contrib.rnn.MultiRNNCell([lstm_cell] * layer_num, state_is_tuple=True)
-#
-#     # **步骤5：用全零来初始化state
-#     init_state = mlstm_cell.zero_state(batch_size, dtype=tf.float32)
-#
-#     # **步骤6：方法一，调用 dynamic_rnn() 来让我们构建好的网络运行起来
-#     # ** 当 time_major==False 时， outputs.shape = [batch_size, timestep_size, hidden_size]
-#     # ** 所以，可以取 h_state = outputs[:, -1, :] 作为最后输出
-#     # ** state.shape = [layer_num, 2, batch_size, hidden_size],
-#     # ** 或者，可以取 h_state = state[-1][1] 作为最后输出
-#     # ** 最后输出维度是 [batch_size, hidden_size]
-#     outputs, final_state_ = tf.nn.dynamic_rnn(mlstm_cell, inputs=X, sequence_length=X_length, initial_state=init_state,
-#                                               time_major=False)
-#     # final_state估计是（layer_num,(cell_state,hidden_state)）
-#     print('outputs', outputs)#outputs Tensor("rnn/transpose_1:0", shape=(400, ?, 300), dtype=float32),batch_size*step*dim
-#     # 针对有padding时的state
-#
-#
-#     seq_len_num=X_length.get_shape()
-#     print('seq_len_num',seq_len_num)
-#
-#     # last_relevant_state = last_relevant(outputs, X_length)
-#
-#
-#     #inputs=outputs没有对outputs进行掩膜，即取前t个不是0的step,attention_size可简单的设为n_hidden_units
-#     attention_cls=attention_self_define(inputs=outputs, attention_size=n_hidden_units, time_major=False, return_alphas=False)
-#     last_relevant_state=attention_cls
-#
-#     print('last_relevant_state ', last_relevant_state)#Tensor("GatherV2:0", shape=(?, 300), dtype=float32)batch_size*dim
-#     # with tf.variable_scope("logis",reuse=None):
-#
-#     logits=tf.layers.dense(inputs=last_relevant_state, units=n_classes, activation=None,
-#                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-#                            bias_initializer = tf.zeros_initializer(),
-#
-#                            )
-#     return logits
+
 
 
 print('encoder_inputs_embedded', encoder_inputs_embedded)
@@ -385,13 +336,22 @@ train_op = tf.train.AdamOptimizer(lr).minimize(cost, global_step=step)
 correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(label_one_hot, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
+
 # Training summary for the current batch_loss
 
 # log_var = tf.Variable(0.0)
 # tf.summary.scalar('loss', log_var)
 
-tf.summary.scalar('loss', cost)
+loss_summary=tf.summary.scalar('loss', cost)
+acc_summary =tf.summary.scalar('accuracy', accuracy)
+
+#生成的是两个图，一个是loss,一个是accuracy
+
+#以下三个都可以
+
 summary_op = tf.summary.merge_all()
+# merged = tf.merge_summary([loss_summary, acc_summary])
+# tf.merge_all_summaries()
 
 
 
@@ -406,8 +366,8 @@ with tf.Session() as sess:
 
     transfer_learning = False
     # 如果存在已经保存的模型的话，就继续训练，否则，就重新开始
-    ckpt = tf.train.get_checkpoint_state(model_hotel_path)
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):# and False:
+    ckpt = tf.train.get_checkpoint_state(model_fruit_path)
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path) :#and False:
         print('Reloading model parameters..')
         if transfer_learning:
             restore_vaiables=[each for each in tf.global_variables() if 'dense' not in each.name]
