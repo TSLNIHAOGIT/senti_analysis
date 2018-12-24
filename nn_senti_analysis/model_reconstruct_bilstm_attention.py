@@ -18,8 +18,8 @@ import os
 #
 # tf.set_random_seed(1)  # set random seed
 
-# data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
-data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
+data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
+# data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
 
 word2id, id2word, trainingSamples = loadDataset(data_path)
 
@@ -370,10 +370,10 @@ print('encoder_inputs_embedded', encoder_inputs_embedded)
 logits = RNN(encoder_inputs_embedded)
 
 # 加入last_relavent有问题
-pred = tf.nn.softmax(logits)
+# pred = tf.nn.softmax(logits)
 
 # Define loss and optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=label_one_hot))
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=label_one_hot))
 
 
 step = tf.Variable(0, trainable=False)
@@ -382,7 +382,7 @@ train_op = tf.train.AdamOptimizer(lr).minimize(cost, global_step=step)
 
 
 # Evaluate mode
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(label_one_hot, 1))
+correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(label_one_hot, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Training summary for the current batch_loss
@@ -404,7 +404,7 @@ with tf.Session() as sess:
     #     print('node.name', n.name)
     # Run the initializer
 
-    transfer_learning = True
+    transfer_learning = False
     # 如果存在已经保存的模型的话，就继续训练，否则，就重新开始
     ckpt = tf.train.get_checkpoint_state(model_hotel_path)
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):# and False:

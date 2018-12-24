@@ -250,13 +250,13 @@ pred = tf.nn.softmax(logits)
 
 
 
-# Define loss and optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=label_one_hot))
-
-
-# Evaluate mode
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(label_one_hot, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+# # Define loss and optimizer
+# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=label_one_hot))
+#
+#
+# # Evaluate mode
+# correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(label_one_hot, 1))
+# accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # start training
 with tf.Session() as sess:

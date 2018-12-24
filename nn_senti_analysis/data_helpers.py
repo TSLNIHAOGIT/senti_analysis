@@ -11,9 +11,11 @@ import re
 import jieba
 import datetime;
 import random;
-
+module_path = os.path.dirname(__file__)#文件所在脚本的相对路径
+#当前文件所在目录的上级目录
+pre_dir=os.path.join(module_path,'..')#相对路径的上级路径
 #自定义词典要放在并行化程序之前，否则不起作用
-jieba.load_userdict('../data/self_define_dict.txt')
+jieba.load_userdict(os.path.join(pre_dir,'data/self_define_dict.txt'))
 
 #nltk.download()
 padToken, goToken, eosToken, unknownToken = 0, 1, 2, 3
@@ -25,6 +27,7 @@ class Batch:
         self.encoder_inputs_length = []
         self.decoder_targets = []
         self.decoder_targets_length = []
+
 
 def loadDataset(filename):
     '''
@@ -99,7 +102,7 @@ def getBatches(data, batch_size,training_flag=True):
     return batches
 
 #添加停用词词典
-with open('../data/stopWord.txt') as stopwords:
+with open(os.path.join(pre_dir,'data/stopWord.txt')) as stopwords:
     stopwords_set=set()
     for each in stopwords:
         stopwords_set.add(each.strip())

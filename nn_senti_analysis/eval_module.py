@@ -270,16 +270,17 @@ print('encoder_inputs_embedded', encoder_inputs_embedded)
 logits = RNN(encoder_inputs_embedded)
 
 # 加入last_relavent有问题
-pred = tf.nn.softmax(logits)
+# pred = tf.nn.softmax(logits)
+#将losits转为概率，不输出概率时可以不用
 
 
 
 # Define loss and optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=label_one_hot))
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=label_one_hot))
 
 
 # Evaluate mode
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(label_one_hot, 1))
+correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(label_one_hot, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # start training
@@ -312,12 +313,12 @@ with tf.Session() as sess:
         print('go 1',[id2word[each] for each in batch_xs[1]])
 
         if current_step % 1 == 0:
-            loss, acc, prediction = sess.run([cost, accuracy,pred],
+            loss, acc, logits_value = sess.run([cost, accuracy,logits],
                                           feed_dict={encoder_inputs: batch_xs, decoder_targets: batch_ys,
                                                      keep_prob: 1, batch_size: len(batch_xs)})  # len(batch_xs)  #预测时要关闭dropout
             tqdm.write("----- Step %d -- Loss %.5f -- acc %.5f" % (current_step, loss, acc))
             # print('pred',prediction.shape,prediction)#pred (300, 2)
-            batch_pred_label=np.argmax(prediction, 1)
+            batch_pred_label=np.argmax(logits_value, 1)
             # print('predict label',batch_pred_label)
             all_pred_label.extend(batch_pred_label)
             sum_acc=sum_acc+len(batch_xs)*acc
