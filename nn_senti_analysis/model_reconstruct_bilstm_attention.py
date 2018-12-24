@@ -18,8 +18,8 @@ import os
 #
 # tf.set_random_seed(1)  # set random seed
 
-data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
-# data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
+# data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
+data_path='../data/data_cleaned/fruit-vocabSize50000.pkl'#迁移学习时，词汇个数不一样维度就不一样
 
 word2id, id2word, trainingSamples = loadDataset(data_path)
 
