@@ -18,7 +18,7 @@ import os
 # tf.set_random_seed(1)  # set random seed
 
 # data_path = '../data/data_cleaned/hotel-vocabSize50000.pkl'
-data_path = '../../data/data_cleaned/fruit-vocabSize50000.pkl'  # 迁移学习时，词汇个数不一样维度就不一样
+data_path = '../data/data_cleaned/fruit-vocabSize50000.pkl'  # 迁移学习时，词汇个数不一样维度就不一样
 
 word2id, id2word, trainingSamples = loadDataset(data_path)
 
@@ -422,12 +422,11 @@ print('outputs',outputs)
 
 
 #encoder和label之间的attention
-#self-attention每个词向量已经看到全局信息，这里使用最后时刻t就可以了
-# attention_cls = attention_label_define(inputs=outputs, attention_size=n_hidden_units, time_major=False,
-#                                           return_alphas=False)
+attention_cls = attention_label_define(inputs=outputs, attention_size=n_hidden_units, time_major=False,
+                                          return_alphas=False)
 
 
-attention_cls=outputs[:,-1,:]
+
 
 # Final linear projection
 logits = tf.layers.dense(inputs=attention_cls, units=n_classes, activation=None,
@@ -483,7 +482,7 @@ with tf.Session() as sess:
     transfer_learning = False
     # 如果存在已经保存的模型的话，就继续训练，否则，就重新开始
     ckpt = tf.train.get_checkpoint_state(model_hotel_path)
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path) and False:
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path) :#and False:
         print('Reloading model parameters..')
         if transfer_learning:
             restore_vaiables = [each for each in tf.global_variables() if 'dense' not in each.name]
