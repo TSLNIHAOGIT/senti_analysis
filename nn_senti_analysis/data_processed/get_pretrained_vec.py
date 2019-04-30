@@ -30,12 +30,17 @@ word2id_dic=joblib.load(path)
 word2vec_list=np.random.uniform(-1,1,size=(len(word2id_dic),300))
 print('word2vec_list',word2vec_list)
 #值为0的放在第0行，值为1的放在第1行
+
+#判断有多少词汇是不在词向量中的
 count=0
 for word,id in word2id_dic.items():
-    if word not in word2vec_dic:
+    if word not in word2vec_dic:#word2vec_dic词和向量组成的字典
         count=count+1
-print('count',count)
-    # word2vec_list[id,:]=word2vec_dic.get(word,word2vec_list[id,:])
+# print('count',count)
+    #word2id中的词在词向量中就用词向量初始化，否则就是随机初始化
+    word2vec_list[id,:]=word2vec_dic.get(word,word2vec_list[id,:])
+
+#保存初始化的词向量
 # joblib.dump(word2vec_list,'pretrained_word2vec_list.pkl')
 
 
