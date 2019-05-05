@@ -99,7 +99,7 @@ pretrained_word2vec=np.float32(joblib.load('data_processed/pretrained_word2vec_l
 
 #embedding 被不断的训练，开始时是随机初始化，然后不断的调用之前训练好的
 #词表总共有50000个词汇，编号从0-50000（0，1，2，3分别为padToken, goToken, eosToken, unknownToken）
-#因此embedding0-50000的词向量要一一对应
+#embedding词向量就是根据这50000个词确定的shape为：50000*300 （words*dim）
 #初始化embedding为常量时不需要指定大小
 embedding = tf.get_variable('embedding',initializer=pretrained_word2vec)
 
