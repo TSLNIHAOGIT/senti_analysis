@@ -18,6 +18,13 @@ from six.moves import urllib
 
 from tensorflow.python.platform import gfile
 import numpy as np
+'''
+构建word2id方法
+1.利用所有语料，构建词汇表：根据语料分词之后获取前n个高频词汇（[_PAD, _GO, _EOS, _UNK]放在最前面），一共n+4=50000个词汇，将该50000个词汇从0-49999进行编号，构成all_vocabs_id
+2.对于每个句子word2id:根据上一步的all_vocabs_id构建每一句话分词后的word2id:word2id_dic[each_word]=all_vocabs_id_dict.get(each_word, UNK_ID)
+3.构建id2word：注意新词id都相同，此处为3，对应的word都是unk
+4.根据前面的构建所有数据相应格式的训练语料
+'''
 # Special vocabulary symbols - we always put them at the start.
 _PAD = "<pad>"
 _GO = "<go>"
@@ -108,6 +115,8 @@ def create_vocabulary(vocabulary_path, data_path, max_vocabulary_size,
       #前面一步表示按词频从高到低排列，下一步表示如果词汇量大于50000，则取前50000个词汇
       if len(vocab_list) > max_vocabulary_size:
         vocab_list = vocab_list[:max_vocabulary_size]
+
+      #将前50000个高频词汇从0-49999进行变号，构成all_vocabs_id
       all_vocabs_id_dict = dict([(x, y) for (y, x) in enumerate(vocab_list)])
       print("all_vocabs_id_dict",all_vocabs_id_dict)
       joblib.dump(all_vocabs_id_dict,vocabulary_path)#
@@ -138,6 +147,7 @@ def word2id_func(text_path,word2id_save_path,all_vocabs_id_dict_path):
         for each_word in tokens:
 
           ######unk
+          #构建word2id，如果句子中的词不在词汇表中，那么其id就为unk对应的id
           word2id_dic[each_word]=all_vocabs_id_dict.get(each_word, UNK_ID)
 
         if index==10000:
